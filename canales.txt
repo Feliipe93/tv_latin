@@ -35,3 +35,9 @@ Extrema
 # Ejemplo: descomenta para quitar las variantes en portugués de Brasil.
 # Brazil
 # Pluto TV BR
+
+# Otras listas M3U que se añaden COMPLETAS (sin filtrar) al final de tv_latin.m3u,
+# con un sufijo en el nombre de cada canal para distinguirlas. Formato: URL | sufijo
+# Cuando la VM con stream-tv-full esté lista (ver carpeta vm/), descomenta estas dos líneas:
+# [fuentes_extra]
+# http://IP-DE-TU-VM/listas/main_proxy.m3u | | pipe

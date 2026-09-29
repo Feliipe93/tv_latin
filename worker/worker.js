@@ -1,5 +1,5 @@
-// Cloudflare Worker: devuelve la lista lac.m3u de iptv-org filtrada según canales.txt.
-// No guarda nada: cada petición descarga la lista original y la filtra al vuelo.
+// Cloudflare Worker: devuelve la lista lac.m3u de iptv-org filtrada según canales.txt,
+// más las [fuentes_extra] configuradas. No guarda nada: se genera al vuelo.
 
 const SOURCE_URL = "https://iptv-org.github.io/iptv/regions/lac.m3u";
 const CONFIG_URL = "https://raw.githubusercontent.com/Feliipe93/tv_latin/main/canales.txt";
@@ -7,8 +7,8 @@ const CACHE_SECONDS = 3600; // reutiliza el resultado hasta 1 hora para responde
 
 const SUFFIX_RE = /\s*(\(\d+p\)|\[[^\]]*\])/g;
 
-function leerConfig(texto) {
-  const reglas = { contiene: [], exactos: [], excluir: [] };
+export function leerConfig(texto) {
+  const reglas = { contiene: [], exactos: [], excluir: [], fuentes_extra: [] };
   let seccion = null;
   for (let linea of texto.split(/\r?\n/)) {
     linea = linea.trim();
@@ -19,9 +19,31 @@ function leerConfig(texto) {
       continue;
     }
     if (!seccion) throw new Error(`Línea fuera de sección: ${linea}`);
-    reglas[seccion].push(linea.toLowerCase());
+    if (seccion === "fuentes_extra") {
+      const idx = linea.indexOf("|");
+      const url = (idx === -1 ? linea : linea.slice(0, idx)).trim();
+      const sufijo = idx === -1 ? "" : linea.slice(idx + 1).trim();
+      reglas.fuentes_extra.push({ url, sufijo });
+    } else {
+      reglas[seccion].push(linea.toLowerCase());
+    }
   }
   return reglas;
+}
+
+function* bloques(m3u) {
+  const lineas = m3u.split(/\r?\n/);
+  let i = 0;
+  while (i < lineas.length) {
+    if (lineas[i].startsWith("#EXTINF")) {
+      const bloque = [lineas[i++]];
+      while (i < lineas.length && lineas[i].startsWith("#")) bloque.push(lineas[i++]);
+      if (i < lineas.length) bloque.push(lineas[i++]);
+      yield bloque;
+    } else {
+      i++;
+    }
+  }
 }
 
 function nombreLimpio(extinf) {
@@ -35,27 +57,32 @@ function coincide(nombre, reglas) {
   return reglas.contiene.some((kw) => nombre.includes(kw));
 }
 
+function conSufijo(extinf, sufijo) {
+  if (!sufijo) return extinf;
+  const idx = extinf.lastIndexOf(",");
+  return `${extinf.slice(0, idx)},${extinf.slice(idx + 1).trim()} ${sufijo}`;
+}
+
 export function filtrar(m3u, reglas) {
-  const lineas = m3u.split(/\r?\n/);
   const salida = ["#EXTM3U"];
   let total = 0;
-  let i = 0;
-  while (i < lineas.length) {
-    const linea = lineas[i];
-    if (linea.startsWith("#EXTINF")) {
-      const bloque = [linea];
-      i++;
-      while (i < lineas.length && lineas[i].startsWith("#")) bloque.push(lineas[i++]);
-      if (i < lineas.length) bloque.push(lineas[i++]);
-      if (coincide(nombreLimpio(linea), reglas)) {
-        salida.push(...bloque);
-        total++;
-      }
-    } else {
-      i++;
+  for (const bloque of bloques(m3u)) {
+    if (coincide(nombreLimpio(bloque[0]), reglas)) {
+      salida.push(...bloque);
+      total++;
     }
   }
-  return { m3u: salida.join("\n") + "\n", total };
+  return { lineas: salida, total };
+}
+
+export function agregarExtra(salida, m3u, sufijo) {
+  let total = 0;
+  for (const bloque of bloques(m3u)) {
+    if (bloque[bloque.length - 1].startsWith("#")) continue;
+    salida.push(conSufijo(bloque[0], sufijo), ...bloque.slice(1));
+    total++;
+  }
+  return total;
 }
 
 async function descargar(url) {
@@ -70,15 +97,23 @@ async function hash(texto) {
 }
 
 async function generar(config) {
-  const fuente = await descargar(SOURCE_URL);
-  const { m3u, total } = filtrar(fuente, leerConfig(config));
+  const reglas = leerConfig(config);
+  const { lineas, total } = filtrar(await descargar(SOURCE_URL), reglas);
   if (total === 0) throw new Error("Ningún canal coincidió con canales.txt");
-  return new Response(m3u, {
+
+  let totalExtra = 0;
+  const extras = await Promise.allSettled(reglas.fuentes_extra.map((f) => descargar(f.url)));
+  extras.forEach((r, i) => {
+    if (r.status === "fulfilled") totalExtra += agregarExtra(lineas, r.value, reglas.fuentes_extra[i].sufijo);
+  });
+
+  return new Response(lineas.join("\n") + "\n", {
     headers: {
       "content-type": "audio/x-mpegurl; charset=utf-8",
       "content-disposition": 'inline; filename="tv_latin.m3u"',
       "cache-control": `public, max-age=${CACHE_SECONDS}`,
-      "x-canales": String(total),
+      "x-canales": String(total + totalExtra),
+      "x-canales-extra": String(totalExtra),
     },
   });
 }

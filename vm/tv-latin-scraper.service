@@ -1,0 +1,12 @@
+[Unit]
+Description=stream-tv-full: regenerar main_proxy.m3u
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=__USUARIO__
+WorkingDirectory=__SCRAPER_DIR__
+ExecStart=__DESTINO__/.venv/bin/python gen_dual_playlist_v2_no_cache_web_system.py --single
+TimeoutStartSec=45min
+Nice=10

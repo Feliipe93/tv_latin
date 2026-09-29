@@ -1,0 +1,11 @@
+[Unit]
+Description=Regenerar la lista de stream-tv-full periódicamente
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=__INTERVALO__
+RandomizedDelaySec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

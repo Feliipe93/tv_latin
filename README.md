@@ -30,9 +30,21 @@ Lo define `canales.txt`:
 - `[contiene]`: cualquier canal cuyo nombre contenga el texto (ej. `Latin America`, `Pluto TV`).
 - `[exactos]`: solo canales con ese nombre exacto (ej. `Mega (Chile)`, `T13 En Vivo`).
 - `[excluir]`: canales a descartar aunque coincidan arriba.
+- `[fuentes_extra]`: otras listas M3U que se añaden completas al final, con un sufijo en el
+  nombre (`URL | sufijo`). Se usa para los canales de stream-tv-full servidos desde la VM
+  (ver abajo). Si una fuente extra no responde, la lista sale igual sin ella.
 
 Para agregar o quitar canales, edita `canales.txt` desde la web de GitHub y guarda.
 El Worker toma el cambio solo (pocos minutos); la copia estática se regenera cuando corre Actions.
+
+## Canales de stream-tv-full (VM Oracle, sufijo ` | pipe`)
+
+Los streams de [stream-tv-full](https://github.com/Feliipe93/stream-tv-full) van atados a la IP,
+caducan en horas y necesitan proxy, así que requieren una máquina encendida: una VM gratis de
+Oracle Cloud. En [`vm/`](vm/README.md) está el instalador (`instalar.sh`) que monta el scraper
+(cada 3 h), el proxy Apache y publica `http://IP-VM/listas/main_proxy.m3u`. Esa URL se añade en
+`[fuentes_extra]` de `canales.txt` con el sufijo `| pipe`, y tanto el Worker como `tv_latin.m3u`
+la fusionan al final: `ESPN Premium | pipe`, etc.
 
 ## Historia: por qué hay dos mecanismos
 
