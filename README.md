@@ -9,6 +9,14 @@ actualizada automáticamente todos los días con GitHub Actions. No necesita PC 
 https://raw.githubusercontent.com/Feliipe93/tv_latin/main/tv_latin.m3u
 ```
 
+```
+Para desbloquear:
+
+Ve a https://github.com/settings/billing/payment_information y actualiza/vuelve a agregar la tarjeta (o prueba otra).
+Si sigue bloqueada, escribe a https://support.github.com (categoría Billing) — suelen desbloquear rápido.
+Cuando se desbloquee, ve a https://github.com/Feliipe93/tv_latin/actions/workflows/actualizar.yml → "Run workflow"; si corre en verde, ya queda automático.
+```
+
 Pégala en VLC, TiviMate, IPTV Smarters, Kodi, etc.
 
 ## Qué canales incluye
