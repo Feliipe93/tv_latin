@@ -6,8 +6,11 @@ actualizada automáticamente todos los días con GitHub Actions. No necesita PC 
 ## URL de la lista
 
 ```
-https://raw.githubusercontent.com/Feliipe93/tv_latin/main/tv_latin.m3u
+https://tv-latin.tvlatin.workers.dev
 ```
+
+(Cloudflare Worker: se filtra al vuelo en cada petición, siempre al día.)
+Copia estática generada por GitHub Actions: `https://raw.githubusercontent.com/Feliipe93/tv_latin/main/tv_latin.m3u`
 
 ```
 Para desbloquear:
@@ -49,7 +52,7 @@ Pasos (5 minutos, sin instalar nada):
 3. Ponle de nombre `tv-latin` y pulsa **Deploy**.
 4. Pulsa **Edit code**, borra todo el código de ejemplo, pega el contenido de
    [`worker/worker.js`](worker/worker.js) y pulsa **Deploy**.
-5. Tu lista queda en `https://tv-latin.<tu-subdominio>.workers.dev` (la URL aparece en el panel).
+5. Tu lista queda en `https://tv-latin.<tu-subdominio>.workers.dev` (la de este repo ya está desplegada: https://tv-latin.tvlatin.workers.dev).
 
 Para cambiar canales sigue editando `canales.txt` en GitHub: el Worker lo lee de ahí
 (los cambios se ven en máximo 1 hora por la caché).
