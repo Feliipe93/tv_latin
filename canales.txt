@@ -1,0 +1,26 @@
+# Configuración de los canales que quieres conservar.
+# Edita este archivo y la lista se regenera sola en la próxima ejecución
+# (o ejecuta el workflow manualmente en la pestaña "Actions").
+#
+# Las comparaciones no distinguen mayúsculas/minúsculas.
+# La calidad "(1080p)" y etiquetas como "[Not 24/7]" se ignoran al comparar.
+
+[contiene]
+# Se incluye cualquier canal cuyo nombre CONTENGA este texto.
+Latin America
+Pluto TV
+
+[exactos]
+# Se incluye solo si el nombre del canal es EXACTAMENTE este.
+Meganoticias Ahora
+Mega (Chile)
+Megatiempo
+T13 En Vivo
+Canal 13 (Chile)
+ChileVision
+
+[excluir]
+# Canales que NO quieres aunque coincidan arriba (también por "contiene").
+# Ejemplo: descomenta para quitar las variantes en portugués de Brasil.
+# Brazil
+# Pluto TV BR
