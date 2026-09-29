@@ -35,3 +35,23 @@ el workflow se ejecuta al instante y regenera `tv_latin.m3u`.
 `.github/workflows/actualizar.yml` corre `filtrar.py` cada día a las 06:00 UTC (y también
 al editar `canales.txt` o manualmente desde la pestaña **Actions** → *Actualizar lista* → *Run workflow*).
 El script descarga `lac.m3u`, conserva solo los canales configurados y hace commit de `tv_latin.m3u`.
+
+## Plan B: Cloudflare Worker (sin GitHub Actions)
+
+Si Actions no está disponible, `worker/worker.js` genera la misma lista al vuelo: cada vez que
+el reproductor pide la URL, el Worker descarga `lac.m3u`, la filtra con el `canales.txt` de este
+repo y la devuelve. Siempre actualizada, gratis (100.000 peticiones/día) y sin servidor propio.
+
+Pasos (5 minutos, sin instalar nada):
+
+1. Crea una cuenta gratis en https://dash.cloudflare.com/sign-up.
+2. En el panel: **Workers & Pages** → **Create** → **Create Worker**.
+3. Ponle de nombre `tv-latin` y pulsa **Deploy**.
+4. Pulsa **Edit code**, borra todo el código de ejemplo, pega el contenido de
+   [`worker/worker.js`](worker/worker.js) y pulsa **Deploy**.
+5. Tu lista queda en `https://tv-latin.<tu-subdominio>.workers.dev` (la URL aparece en el panel).
+
+Para cambiar canales sigue editando `canales.txt` en GitHub: el Worker lo lee de ahí
+(los cambios se ven en máximo 1 hora por la caché).
+
+Si prefieres la terminal: `cd worker && npx wrangler deploy`.

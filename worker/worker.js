@@ -1,0 +1,99 @@
+// Cloudflare Worker: devuelve la lista lac.m3u de iptv-org filtrada según canales.txt.
+// No guarda nada: cada petición descarga la lista original y la filtra al vuelo.
+
+const SOURCE_URL = "https://iptv-org.github.io/iptv/regions/lac.m3u";
+const CONFIG_URL = "https://raw.githubusercontent.com/Feliipe93/tv_latin/main/canales.txt";
+const CACHE_SECONDS = 3600; // reutiliza el resultado hasta 1 hora para responder rápido
+
+const SUFFIX_RE = /\s*(\(\d+p\)|\[[^\]]*\])/g;
+
+function leerConfig(texto) {
+  const reglas = { contiene: [], exactos: [], excluir: [] };
+  let seccion = null;
+  for (let linea of texto.split(/\r?\n/)) {
+    linea = linea.trim();
+    if (!linea || linea.startsWith("#")) continue;
+    if (linea.startsWith("[") && linea.endsWith("]")) {
+      seccion = linea.slice(1, -1).toLowerCase();
+      if (!(seccion in reglas)) throw new Error(`Sección desconocida: [${seccion}]`);
+      continue;
+    }
+    if (!seccion) throw new Error(`Línea fuera de sección: ${linea}`);
+    reglas[seccion].push(linea.toLowerCase());
+  }
+  return reglas;
+}
+
+function nombreLimpio(extinf) {
+  const nombre = extinf.slice(extinf.lastIndexOf(",") + 1);
+  return nombre.replace(SUFFIX_RE, "").trim().toLowerCase();
+}
+
+function coincide(nombre, reglas) {
+  if (reglas.excluir.some((ex) => nombre.includes(ex))) return false;
+  if (reglas.exactos.includes(nombre)) return true;
+  return reglas.contiene.some((kw) => nombre.includes(kw));
+}
+
+export function filtrar(m3u, reglas) {
+  const lineas = m3u.split(/\r?\n/);
+  const salida = ["#EXTM3U"];
+  let total = 0;
+  let i = 0;
+  while (i < lineas.length) {
+    const linea = lineas[i];
+    if (linea.startsWith("#EXTINF")) {
+      const bloque = [linea];
+      i++;
+      while (i < lineas.length && lineas[i].startsWith("#")) bloque.push(lineas[i++]);
+      if (i < lineas.length) bloque.push(lineas[i++]);
+      if (coincide(nombreLimpio(linea), reglas)) {
+        salida.push(...bloque);
+        total++;
+      }
+    } else {
+      i++;
+    }
+  }
+  return { m3u: salida.join("\n") + "\n", total };
+}
+
+async function descargar(url) {
+  const resp = await fetch(url, { headers: { "user-agent": "tv_latin-worker" } });
+  if (!resp.ok) throw new Error(`Error ${resp.status} al descargar ${url}`);
+  return resp.text();
+}
+
+async function generar() {
+  const [config, fuente] = await Promise.all([descargar(CONFIG_URL), descargar(SOURCE_URL)]);
+  const { m3u, total } = filtrar(fuente, leerConfig(config));
+  if (total === 0) throw new Error("Ningún canal coincidió con canales.txt");
+  return new Response(m3u, {
+    headers: {
+      "content-type": "audio/x-mpegurl; charset=utf-8",
+      "content-disposition": 'inline; filename="tv_latin.m3u"',
+      "cache-control": `public, max-age=${CACHE_SECONDS}`,
+      "x-canales": String(total),
+    },
+  });
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const cache = caches.default;
+    const clave = new Request(new URL(request.url).origin + "/tv_latin.m3u", { method: "GET" });
+    const cacheado = await cache.match(clave);
+    if (cacheado) return cacheado;
+
+    try {
+      const resp = await generar();
+      ctx.waitUntil(cache.put(clave, resp.clone()));
+      return resp;
+    } catch (err) {
+      return new Response(`Error generando la lista: ${err.message}\n`, {
+        status: 502,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
+  },
+};
