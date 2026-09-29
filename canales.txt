@@ -6,9 +6,19 @@
 # La calidad "(1080p)" y etiquetas como "[Not 24/7]" se ignoran al comparar.
 
 [contiene]
-# Se incluye cualquier canal cuyo nombre CONTENGA este texto.
+# Se incluye cualquier canal cuyo nombre CONTENGA este texto
+# (como prefijo, sufijo o en medio; da igual mayúsculas/minúsculas).
 Latin America
+LatAm
 Pluto TV
+Espanol
+Español
+Spanish
+ESPN
+Nickelodeon
+NickOnline
+South Park
+Xtrema
 
 [exactos]
 # Se incluye solo si el nombre del canal es EXACTAMENTE este.
@@ -21,6 +31,7 @@ ChileVision
 
 [excluir]
 # Canales que NO quieres aunque coincidan arriba (también por "contiene").
+Extrema
 # Ejemplo: descomenta para quitar las variantes en portugués de Brasil.
 # Brazil
 # Pluto TV BR
