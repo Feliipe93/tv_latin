@@ -1,26 +1,27 @@
 # tv_latin
 
-Lista IPTV filtrada a partir de [iptv-org](https://github.com/iptv-org/iptv) (`regions/lac.m3u`),
-actualizada automáticamente todos los días con GitHub Actions. No necesita PC ni servidor.
+Lista IPTV filtrada a partir de [iptv-org](https://github.com/iptv-org/iptv) (`regions/lac.m3u`):
+solo canales *Latin America*, *Pluto TV* y los chilenos (Mega, Meganoticias Ahora, Megatiempo,
+T13 En Vivo, Canal 13, Chilevisión). Se mantiene sola, sin PC encendido ni servidor propio.
 
-## URL de la lista
+## URL de la lista (usa esta)
 
 ```
 https://tv-latin.tvlatin.workers.dev
 ```
 
-(Cloudflare Worker: se filtra al vuelo en cada petición, siempre al día.)
-Copia estática generada por GitHub Actions: `https://raw.githubusercontent.com/Feliipe93/tv_latin/main/tv_latin.m3u`
+Pégala en VLC, TiviMate, IPTV Smarters, Kodi, etc. Es un Cloudflare Worker: cada vez que el
+reproductor pide la lista, descarga `lac.m3u` de iptv-org en ese momento, la filtra con
+`canales.txt` de este repo y la devuelve. Siempre está al día (caché máx. 1 hora).
+
+### Lista de respaldo (si el Worker falla)
 
 ```
-Para desbloquear:
-
-Ve a https://github.com/settings/billing/payment_information y actualiza/vuelve a agregar la tarjeta (o prueba otra).
-Si sigue bloqueada, escribe a https://support.github.com (categoría Billing) — suelen desbloquear rápido.
-Cuando se desbloquee, ve a https://github.com/Feliipe93/tv_latin/actions/workflows/actualizar.yml → "Run workflow"; si corre en verde, ya queda automático.
+https://raw.githubusercontent.com/Feliipe93/tv_latin/main/tv_latin.m3u
 ```
 
-Pégala en VLC, TiviMate, IPTV Smarters, Kodi, etc.
+Es una copia estática guardada en este repo, generada por GitHub Actions. Contiene los mismos
+canales pero solo se actualiza cuando corre el workflow (ver más abajo).
 
 ## Qué canales incluye
 
@@ -30,31 +31,40 @@ Lo define `canales.txt`:
 - `[exactos]`: solo canales con ese nombre exacto (ej. `Mega (Chile)`, `T13 En Vivo`).
 - `[excluir]`: canales a descartar aunque coincidan arriba.
 
-Para agregar o quitar canales, edita `canales.txt` desde la web de GitHub y guarda:
-el workflow se ejecuta al instante y regenera `tv_latin.m3u`.
+Para agregar o quitar canales, edita `canales.txt` desde la web de GitHub y guarda.
+El Worker toma el cambio solo (máx. 1 hora); la copia estática se regenera cuando corre Actions.
 
-## Cómo funciona
+## Historia: por qué hay dos mecanismos
 
-`.github/workflows/actualizar.yml` corre `filtrar.py` cada día a las 06:00 UTC (y también
-al editar `canales.txt` o manualmente desde la pestaña **Actions** → *Actualizar lista* → *Run workflow*).
-El script descarga `lac.m3u`, conserva solo los canales configurados y hace commit de `tv_latin.m3u`.
+1. **Plan original: GitHub Actions.** `.github/workflows/actualizar.yml` ejecuta `filtrar.py`
+   cada día a las 06:00 UTC, al editar `canales.txt` o manualmente (pestaña **Actions** →
+   *Actualizar lista* → *Run workflow*), y hace commit de `tv_latin.m3u`.
+   Al activarlo GitHub respondió *"The job was not started because your account is locked due to
+   a billing issue"* (fallo de autorización de la tarjeta asociada a GitHub Pro). Para reactivarlo:
+   actualizar la tarjeta en https://github.com/settings/billing/payment_information o escribir a
+   https://support.github.com (Billing), y luego lanzar el workflow manualmente.
+2. **Plan B (el que está en uso): Cloudflare Worker.** `worker/worker.js` hace el mismo filtrado
+   al vuelo. Se desplegó con `wrangler` en la cuenta de Cloudflare del dueño del repo, en el
+   subdominio `tvlatin.workers.dev`. Plan gratis: 100.000 peticiones/día, más que suficiente.
 
-## Plan B: Cloudflare Worker (sin GitHub Actions)
+## Volver a desplegar el Worker
 
-Si Actions no está disponible, `worker/worker.js` genera la misma lista al vuelo: cada vez que
-el reproductor pide la URL, el Worker descarga `lac.m3u`, la filtra con el `canales.txt` de este
-repo y la devuelve. Siempre actualizada, gratis (100.000 peticiones/día) y sin servidor propio.
+Solo hace falta si cambias `worker/worker.js` o quieres publicarlo en otra cuenta.
+`canales.txt` NO requiere redesplegar.
 
-Pasos (5 minutos, sin instalar nada):
+Sin instalar nada:
 
-1. Crea una cuenta gratis en https://dash.cloudflare.com/sign-up.
-2. En el panel: **Workers & Pages** → **Create** → **Create Worker**.
-3. Ponle de nombre `tv-latin` y pulsa **Deploy**.
-4. Pulsa **Edit code**, borra todo el código de ejemplo, pega el contenido de
-   [`worker/worker.js`](worker/worker.js) y pulsa **Deploy**.
-5. Tu lista queda en `https://tv-latin.<tu-subdominio>.workers.dev` (la de este repo ya está desplegada: https://tv-latin.tvlatin.workers.dev).
+1. https://dash.cloudflare.com → **Workers & Pages** → **tv-latin** (o **Create Worker** con ese nombre).
+2. **Edit code** → borra todo, pega el contenido de [`worker/worker.js`](worker/worker.js) → **Deploy**.
 
-Para cambiar canales sigue editando `canales.txt` en GitHub: el Worker lo lee de ahí
-(los cambios se ven en máximo 1 hora por la caché).
+Con terminal: `cd worker && npx wrangler deploy` (pide login de Cloudflare).
 
-Si prefieres la terminal: `cd worker && npx wrangler deploy`.
+Si publicas en otra cuenta, cambia `CONFIG_URL` en `worker.js` si el repo también cambia de dueño.
+
+## Si un canal se congela
+
+Los streams son de terceros (iptv-org solo los recopila); si el servidor de origen va lento el
+canal se congela sin importar la lista. Ayuda subir el buffer del reproductor
+(VLC: Preferencias → Entrada/Códecs → *Caché de red* 3000–5000 ms; TiviMate: Ajustes → Reproductor →
+Buffer) y evitar canales marcados `[Not 24/7]` o `[Geo-blocked]`. Un proxy intermedio no lo
+arregla: recibiría el mismo stream lento.
