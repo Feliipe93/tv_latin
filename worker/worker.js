@@ -64,8 +64,13 @@ async function descargar(url) {
   return resp.text();
 }
 
-async function generar() {
-  const [config, fuente] = await Promise.all([descargar(CONFIG_URL), descargar(SOURCE_URL)]);
+async function hash(texto) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function generar(config) {
+  const fuente = await descargar(SOURCE_URL);
   const { m3u, total } = filtrar(fuente, leerConfig(config));
   if (total === 0) throw new Error("Ningún canal coincidió con canales.txt");
   return new Response(m3u, {
@@ -81,12 +86,15 @@ async function generar() {
 export default {
   async fetch(request, env, ctx) {
     const cache = caches.default;
-    const clave = new Request(new URL(request.url).origin + "/tv_latin.m3u", { method: "GET" });
-    const cacheado = await cache.match(clave);
-    if (cacheado) return cacheado;
-
     try {
-      const resp = await generar();
+      // La clave de caché incluye el hash de canales.txt: al editarlo, la lista se regenera enseguida.
+      const config = await descargar(CONFIG_URL);
+      const origen = new URL(request.url).origin;
+      const clave = new Request(`${origen}/tv_latin.m3u?v=${await hash(config)}`, { method: "GET" });
+      const cacheado = await cache.match(clave);
+      if (cacheado) return cacheado;
+
+      const resp = await generar(config);
       ctx.waitUntil(cache.put(clave, resp.clone()));
       return resp;
     } catch (err) {

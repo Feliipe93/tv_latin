@@ -12,7 +12,7 @@ https://tv-latin.tvlatin.workers.dev
 
 Pégala en VLC, TiviMate, IPTV Smarters, Kodi, etc. Es un Cloudflare Worker: cada vez que el
 reproductor pide la lista, descarga `lac.m3u` de iptv-org en ese momento, la filtra con
-`canales.txt` de este repo y la devuelve. Siempre está al día (caché máx. 1 hora).
+`canales.txt` de este repo y la devuelve. Siempre está al día (los cambios en `canales.txt` se ven en pocos minutos).
 
 ### Lista de respaldo (si el Worker falla)
 
@@ -32,7 +32,7 @@ Lo define `canales.txt`:
 - `[excluir]`: canales a descartar aunque coincidan arriba.
 
 Para agregar o quitar canales, edita `canales.txt` desde la web de GitHub y guarda.
-El Worker toma el cambio solo (máx. 1 hora); la copia estática se regenera cuando corre Actions.
+El Worker toma el cambio solo (pocos minutos); la copia estática se regenera cuando corre Actions.
 
 ## Historia: por qué hay dos mecanismos
 
