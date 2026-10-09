@@ -37,6 +37,9 @@ Lo define `canales.txt`:
   nombre (`URL | sufijo`). Se usa para los canales de stream-tv-full servidos desde la VM
   (ver abajo). Si una fuente extra no responde, la lista sale igual sin ella.
 
+Todas las entradas generadas incluyen `aspect-ratio="original"` en `#EXTINF`, para que los
+reproductores compatibles respeten la proporción original del video en lugar de forzar 16:9.
+
 Para agregar o quitar canales, edita `canales.txt` desde la web de GitHub y guarda.
 El Worker toma el cambio solo (pocos minutos); la copia estática se regenera cuando corre Actions.
 

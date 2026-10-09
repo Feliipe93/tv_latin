@@ -94,6 +94,19 @@ def con_sufijo(extinf, sufijo):
     return f"{attrs},{nombre.strip()} {sufijo}"
 
 
+def con_aspect_ratio_original(extinf):
+    if re.search(r'\baspect-ratio\s*=', extinf, re.IGNORECASE):
+        return re.sub(
+            r'\baspect-ratio\s*=\s*"[^"]*"',
+            'aspect-ratio="original"',
+            extinf,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+    attrs, separador, nombre = extinf.rpartition(",")
+    return f'{attrs} aspect-ratio="original"{separador}{nombre}'
+
+
 def main():
     reglas = leer_config(CONFIG_FILE)
     salida = ["#EXTM3U"]
@@ -101,6 +114,7 @@ def main():
     total = 0
     for bloque in bloques(descargar(SOURCE_URL)):
         if coincide(nombre_limpio(bloque[0]), bloque[0], reglas):
+            bloque[0] = con_aspect_ratio_original(bloque[0])
             salida.extend(bloque)
             total += 1
     if total == 0:
@@ -113,7 +127,8 @@ def main():
             for bloque in bloques(descargar(url)):
                 if bloque[-1].startswith("#"):
                     continue
-                salida.append(con_sufijo(bloque[0], sufijo))
+                extinf = con_sufijo(bloque[0], sufijo)
+                salida.append(con_aspect_ratio_original(extinf))
                 salida.extend(bloque[1:])
                 extra += 1
             print(f"{url}: {extra} canales")

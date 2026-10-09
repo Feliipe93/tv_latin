@@ -71,11 +71,20 @@ function conSufijo(extinf, sufijo) {
   return `${extinf.slice(0, idx)},${extinf.slice(idx + 1).trim()} ${sufijo}`;
 }
 
+function conAspectRatioOriginal(extinf) {
+  if (/\baspect-ratio\s*=/i.test(extinf)) {
+    return extinf.replace(/\baspect-ratio\s*=\s*"[^"]*"/i, 'aspect-ratio="original"');
+  }
+  const idx = extinf.lastIndexOf(",");
+  return `${extinf.slice(0, idx)} aspect-ratio="original"${extinf.slice(idx)}`;
+}
+
 export function filtrar(m3u, reglas) {
   const salida = ["#EXTM3U"];
   let total = 0;
   for (const bloque of bloques(m3u)) {
     if (coincide(nombreLimpio(bloque[0]), bloque[0], reglas)) {
+      bloque[0] = conAspectRatioOriginal(bloque[0]);
       salida.push(...bloque);
       total++;
     }
@@ -87,7 +96,7 @@ export function agregarExtra(salida, m3u, sufijo) {
   let total = 0;
   for (const bloque of bloques(m3u)) {
     if (bloque[bloque.length - 1].startsWith("#")) continue;
-    salida.push(conSufijo(bloque[0], sufijo), ...bloque.slice(1));
+    salida.push(conAspectRatioOriginal(conSufijo(bloque[0], sufijo)), ...bloque.slice(1));
     total++;
   }
   return total;
