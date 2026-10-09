@@ -65,6 +65,15 @@ la fusionan al final: `ESPN Premium | pipe`, etc.
    al vuelo. Se desplegó con `wrangler` en la cuenta de Cloudflare del dueño del repo, en el
    subdominio `tvlatin.workers.dev`. Plan gratis: 100.000 peticiones/día, más que suficiente.
 
+## Actualización y despliegue en Cloudflare
+
+La lista principal se genera en el Worker de Cloudflare, no en el PC. En cada solicitud,
+el Worker descarga la lista `lac.m3u` de iptv-org y `canales.txt` de GitHub, filtra los
+canales y devuelve el resultado. Guarda la respuesta en caché durante hasta una hora.
+Los cambios de `canales.txt` se detectan automáticamente al cambiar su contenido.
+Las entradas generadas incluyen `aspect-ratio="original"` para que los reproductores
+compatibles respeten la proporción original del video.
+
 ## Volver a desplegar el Worker
 
 Solo hace falta si cambias `worker/worker.js` o quieres publicarlo en otra cuenta.
@@ -75,7 +84,14 @@ Sin instalar nada:
 1. https://dash.cloudflare.com → **Workers & Pages** → **tv-latin** (o **Create Worker** con ese nombre).
 2. **Edit code** → borra todo, pega el contenido de [`worker/worker.js`](worker/worker.js) → **Deploy**.
 
-Con terminal: `cd worker && npx wrangler deploy` (pide login de Cloudflare).
+Con terminal:
+
+```text
+cd worker
+npx wrangler deploy
+```
+
+El comando pide iniciar sesión en Cloudflare si todavía no hay una sesión de Wrangler.
 
 Si publicas en otra cuenta, cambia `CONFIG_URL` en `worker.js` si el repo también cambia de dueño.
 
