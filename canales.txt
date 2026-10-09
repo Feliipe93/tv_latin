@@ -9,11 +9,15 @@
 # Se incluye cualquier canal cuyo nombre CONTENGA este texto
 # (como prefijo, sufijo o en medio; da igual mayúsculas/minúsculas).
 Latin America
+Latin
 LatAm
+Latino
+Latina
 Pluto TV
 Espanol
 Español
 Spanish
+Gourmet
 ESPN
 Nickelodeon
 NickOnline
