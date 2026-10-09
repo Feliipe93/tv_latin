@@ -4,6 +4,7 @@
 const SOURCE_URL = "https://iptv-org.github.io/iptv/regions/lac.m3u";
 const CONFIG_URL = "https://raw.githubusercontent.com/Feliipe93/tv_latin/main/canales.txt";
 const CACHE_SECONDS = 3600; // reutiliza el resultado hasta 1 hora para responder rápido
+const CACHE_VERSION = "aspect-ratio-original-v1";
 
 const SUFFIX_RE = /\s*(\(\d+p\)|\[[^\]]*\])/g;
 
@@ -142,7 +143,10 @@ export default {
       // La clave de caché incluye el hash de canales.txt: al editarlo, la lista se regenera enseguida.
       const config = await descargar(CONFIG_URL);
       const origen = new URL(request.url).origin;
-      const clave = new Request(`${origen}/tv_latin.m3u?v=${await hash(config)}`, { method: "GET" });
+      const clave = new Request(
+        `${origen}/tv_latin.m3u?v=${CACHE_VERSION}-${await hash(config)}`,
+        { method: "GET" },
+      );
       const cacheado = await cache.match(clave);
       if (cacheado) return cacheado;
 
