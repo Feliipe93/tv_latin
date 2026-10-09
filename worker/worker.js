@@ -51,10 +51,18 @@ function nombreLimpio(extinf) {
   return nombre.replace(SUFFIX_RE, "").trim().toLowerCase();
 }
 
-function coincide(nombre, reglas) {
-  if (reglas.excluir.some((ex) => nombre.includes(ex))) return false;
+function compacto(texto) {
+  return texto.toLowerCase().replace(/[^a-z0-9áéíóúüñ]+/g, "");
+}
+
+function coincide(nombre, extinf, reglas) {
+  const busqueda = extinf.replace(SUFFIX_RE, "").trim().toLowerCase();
+  const busquedaCompacta = compacto(busqueda);
+  if (reglas.excluir.some((ex) => nombre.includes(ex) || busqueda.includes(ex))) return false;
   if (reglas.exactos.includes(nombre)) return true;
-  return reglas.contiene.some((kw) => nombre.includes(kw));
+  return reglas.contiene.some(
+    (kw) => busqueda.includes(kw) || busquedaCompacta.includes(compacto(kw)),
+  );
 }
 
 function conSufijo(extinf, sufijo) {
@@ -67,7 +75,7 @@ export function filtrar(m3u, reglas) {
   const salida = ["#EXTM3U"];
   let total = 0;
   for (const bloque of bloques(m3u)) {
-    if (coincide(nombreLimpio(bloque[0]), reglas)) {
+    if (coincide(nombreLimpio(bloque[0]), bloque[0], reglas)) {
       salida.push(...bloque);
       total++;
     }

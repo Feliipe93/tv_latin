@@ -65,12 +65,26 @@ def nombre_limpio(extinf):
     return SUFFIX_RE.sub("", nombre).strip().lower()
 
 
-def coincide(nombre, reglas):
-    if any(ex in nombre for ex in reglas["excluir"]):
+def texto_busqueda(extinf):
+    """Incluye nombre y metadatos para detectar altas nuevas de iptv-org."""
+    return SUFFIX_RE.sub("", extinf).strip().lower()
+
+
+def compacto(texto):
+    return re.sub(r"[^a-z0-9áéíóúüñ]+", "", texto.lower())
+
+
+def coincide(nombre, extinf, reglas):
+    busqueda = texto_busqueda(extinf)
+    busqueda_compacta = compacto(busqueda)
+    if any(ex in nombre or ex in busqueda for ex in reglas["excluir"]):
         return False
     if nombre in reglas["exactos"]:
         return True
-    return any(kw in nombre for kw in reglas["contiene"])
+    return any(
+        kw in busqueda or compacto(kw) in busqueda_compacta
+        for kw in reglas["contiene"]
+    )
 
 
 def con_sufijo(extinf, sufijo):
@@ -86,7 +100,7 @@ def main():
 
     total = 0
     for bloque in bloques(descargar(SOURCE_URL)):
-        if coincide(nombre_limpio(bloque[0]), reglas):
+        if coincide(nombre_limpio(bloque[0]), bloque[0], reglas):
             salida.extend(bloque)
             total += 1
     if total == 0:

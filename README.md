@@ -21,13 +21,16 @@ https://raw.githubusercontent.com/Feliipe93/tv_latin/main/tv_latin.m3u
 ```
 
 Es una copia estática guardada en este repo, generada por GitHub Actions. Contiene los mismos
-canales pero solo se actualiza cuando corre el workflow (ver más abajo).
+canales pero solo se actualiza cuando corre el workflow (ver más abajo). Si Actions está bloqueado
+por facturación, el Worker sigue siendo la lista principal y se actualiza al solicitarla.
 
 ## Qué canales incluye
 
 Lo define `canales.txt`:
 
-- `[contiene]`: cualquier canal cuyo nombre contenga el texto (ej. `Latin America`, `Pluto TV`).
+- `[contiene]`: cualquier canal cuyo nombre o identificador `tvg-id` contenga el texto
+  (ej. `Latin America`, `Pluto TV`). También se reconocen variantes sin espacios, como
+  `TLCLatinAmerica`, para que los canales nuevos de iptv-org entren automáticamente.
 - `[exactos]`: solo canales con ese nombre exacto (ej. `Mega (Chile)`, `T13 En Vivo`).
 - `[excluir]`: canales a descartar aunque coincidan arriba.
 - `[fuentes_extra]`: otras listas M3U que se añaden completas al final, con un sufijo en el
